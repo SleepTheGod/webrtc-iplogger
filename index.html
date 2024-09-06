@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced WebRTC IP Logger</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f6f9;
+        }
+
+        h1 {
+            color: #005f73;
+            margin-bottom: 20px;
+        }
+
+        #ip-info {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            padding: 20px;
+            display: inline-block;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: auto;
+        }
+
+        pre {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow: auto;
+            text-align: left;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            font-size: 16px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced WebRTC IP Logger</h1>
+    <div id="ip-info">
+        <h2>Your IP Addresses</h2>
+        <pre id="local-ip">Local IPs will appear here...</pre>
+        <pre id="public-ip">Public IP will appear here...</pre>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            async function getLocalIPs() {
+                return new Promise((resolve, reject) => {
+                    const ips = [];
+                    const rtc = new RTCPeerConnection({ iceServers: [] });
+                    rtc.createDataChannel('');
+                    rtc.createOffer().then(offer => rtc.setLocalDescription(offer));
+                    rtc.onicecandidate = event => {
+                        if (event.candidate) {
+                            const ip = event.candidate.candidate.split(' ')[4];
+                            if (!ips.includes(ip)) {
+                                ips.push(ip);
+                                resolve(ips);
+                            }
+                        }
+                    };
+                });
+            }
+
+            async function getPublicIP() {
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const data = await response.json();
+                    return data.ip;
+                } catch (error) {
+                    console.error('Error fetching public IP:', error);
+                    return 'Unable to retrieve public IP';
+                }
+            }
+
+            async function displayIPs() {
+                try {
+                    const localIPs = await getLocalIPs();
+                    document.getElementById('local-ip').textContent = `Local IPs:\n${localIPs.join('\n')}`;
+
+                    const publicIP = await getPublicIP();
+                    document.getElementById('public-ip').textContent = `Public IP:\n${publicIP}`;
+                } catch (error) {
+                    console.error('Error displaying IPs:', error);
+                }
+            }
+
+            displayIPs();
+        });
+    </script>
+</body>
+</html>
